@@ -13,3 +13,7 @@ A browser tool that crops the front and back of an Indian Driving Licence or RC 
 Open `index.html` in Chrome or Edge. It needs no server or internet connection; the PDF libraries are bundled in `lib/`.
 
 In the printer dialog, choose paper size 4×6 in (10×15 cm), set scale to 100% / Actual size, and turn on borderless printing if your printer supports it.
+
+---
+
+Developed by [Code Crafters](https://codecrafters-pi.vercel.app/).
