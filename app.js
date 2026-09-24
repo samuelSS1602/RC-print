@@ -336,10 +336,18 @@ $('resetFx').onclick = () => {
   syncFxLabels();
   renderPreviews();
 };
-['cardW', 'cardH'].forEach(id => $(id).oninput = renderPreviews);
+['cardW', 'cardH'].forEach(id => $(id).oninput = () => { updatePaperSpec(); renderPreviews(); });
+function updatePaperSpec() {
+  const { wcm, hcm } = cardPx();
+  const txt = `${fmtCm(wcm)} × ${fmtCm(hcm)} cm`;
+  $('cardSpec').textContent = txt;
+}
 
-// ---------- Print output: 6×4 in landscape, one card per page ----------
-const PAGE_IN = { w: 6, h: 4 };
+// ---------- Print output: 4×6 in paper (landscape), one card per page ----------
+// The card itself prints at the Card width × height (8.5 × 5.5 cm by default), centred on the sheet.
+const PAPER_CM = { w: 15.24, h: 10.16 };   // 6 × 4 in, landscape
+const pageCm = () => PAPER_CM;
+const fmtCm = v => (Math.round(v * 100) / 100).toString();
 const MODE_NOTES = {
   color: '2 pages: front, back (color)',
   gray: '2 pages: front, back (grayscale)',
@@ -386,22 +394,41 @@ function clipRounded(card) {
   return out;
 }
 
-// Stretches the card to cover the full 6×4 page edge to edge (no margins, no crop marks).
+// Places the card at its exact size in the centre of the sheet and draws corner crop marks.
 function composePage(card, dpi) {
-  const pw = Math.round(PAGE_IN.w * dpi), ph = Math.round(PAGE_IN.h * dpi);
+  const pg = pageCm();
+  const pw = Math.round(pg.w / 2.54 * dpi), ph = Math.round(pg.h / 2.54 * dpi);
   const page = document.createElement('canvas');
   page.width = pw; page.height = ph;
   const ctx = page.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pw, ph);
+
+  const { wcm, hcm } = cardPx();
+  const cw = Math.round(wcm / 2.54 * dpi), ch = Math.round(hcm / 2.54 * dpi);
+  const x = Math.round((pw - cw) / 2), y = Math.round((ph - ch) / 2);
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(card, 0, 0, pw, ph);
+  ctx.drawImage(card, x, y, cw, ch);
+
+  // Crop marks sit just outside each corner so nothing is drawn on the card itself.
+  const mm = dpi / 25.4, gap = 1.5 * mm, len = 5 * mm;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = Math.max(1, 0.2 * mm);
+  ctx.beginPath();
+  for (const [cx, sx] of [[x, -1], [x + cw, 1]]) {
+    for (const [cy, sy] of [[y, -1], [y + ch, 1]]) {
+      ctx.moveTo(cx + sx * gap, cy); ctx.lineTo(cx + sx * (gap + len), cy);   // horizontal mark
+      ctx.moveTo(cx, cy + sy * gap); ctx.lineTo(cx, cy + sy * (gap + len));   // vertical mark
+    }
+  }
+  ctx.stroke();
   return page;
 }
 
 // Returns [{ canvas, label }] in print order for the selected colour mode.
 function buildPages(dpi = DPI) {
-  // Render the cards straight at page resolution so the enlarged print stays sharp.
-  const w = Math.round(PAGE_IN.w * dpi), h = Math.round(PAGE_IN.h * dpi);
+  // Render the cards straight at their print resolution so they stay sharp.
+  const { wcm, hcm } = cardPx();
+  const w = Math.round(wcm / 2.54 * dpi), h = Math.round(hcm / 2.54 * dpi);
   const cards = {
     front: clipRounded(renderCard('front', w, h)),
     back: clipRounded(renderCard('back', w, h)),
@@ -442,24 +469,26 @@ renderPreviews = function () {
 $('dlPdf').onclick = () => {
   setStatus('Building PDF…');
   const pages = buildPages();
-  const doc = new window.jspdf.jsPDF({ unit: 'in', format: [PAGE_IN.w, PAGE_IN.h], orientation: 'landscape' });
+  const pg = pageCm();
+  const doc = new window.jspdf.jsPDF({ unit: 'cm', format: [pg.w, pg.h], orientation: 'landscape' });
   pages.forEach((p, i) => {
-    if (i) doc.addPage([PAGE_IN.w, PAGE_IN.h], 'landscape');
-    doc.addImage(p.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PAGE_IN.w, PAGE_IN.h);
+    if (i) doc.addPage([pg.w, pg.h], 'landscape');
+    doc.addImage(p.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pg.w, pg.h);
   });
-  doc.save(`${state.fileName}_6x4.pdf`);
-  setStatus(`PDF downloaded (${pages.length} pages, 6×4 in).`);
+  doc.save(`${state.fileName}_4x6.pdf`);
+  setStatus(`PDF downloaded (${pages.length} pages, 4×6 in).`);
 };
 
 $('dlJpg').onclick = () => {
   const pages = buildPages();
   pages.forEach((p, i) => setTimeout(() => {
     const a = document.createElement('a');
-    a.download = `${state.fileName}_${p.file}_6x4.jpg`;
+    a.download = `${state.fileName}_${p.file}_4x6.jpg`;
     a.href = p.canvas.toDataURL('image/jpeg', 0.95);
     a.click();
   }, i * 300));
-  setStatus(`${pages.length} JPG files downloaded (1800 × 1200 px, 300 DPI).`);
+  const c = pages[0].canvas;
+  setStatus(`${pages.length} JPG files downloaded (${c.width} × ${c.height} px, 300 DPI).`);
 };
 
 $('printBtn').onclick = () => {
@@ -468,13 +497,13 @@ $('printBtn').onclick = () => {
   if (!w) { setStatus('Allow pop-ups for this page to print.'); return; }
   // Build the print document with DOM calls rather than an HTML string, so no markup
   // (and no user-supplied file name) is ever parsed as HTML.
-  const doc = w.document;
-  doc.title = `${state.fileName} - 6x4 print`;
+  const doc = w.document, pg = pageCm();
+  doc.title = `${state.fileName} - 4x6 print`;
   const style = doc.createElement('style');
   style.textContent = `
-    @page { size: 6in 4in; margin: 0; }
+    @page { size: ${pg.w}cm ${pg.h}cm; margin: 0; }
     html, body { margin: 0; padding: 0; }
-    img { display: block; width: 6in; height: 4in; break-after: page; }
+    img { display: block; width: ${pg.w}cm; height: ${pg.h}cm; break-after: page; }
     img:last-child { break-after: auto; }`;
   doc.head.appendChild(style);
   const loads = pages.map(p => new Promise(resolve => {
@@ -491,3 +520,4 @@ function setStatus(msg, isError = false) {
   el.textContent = msg;
   el.classList.toggle('error', isError);
 }
+updatePaperSpec();

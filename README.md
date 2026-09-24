@@ -1,18 +1,65 @@
 # DL / RC PVC Card Print
 
-A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and lays them out for printing on 6×4 inch paper.
+A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and prints them at 8.5 × 5.5 cm on 4 × 6 inch paper.
 
 - Upload a PDF or image; the front and back cards are detected automatically, and you can adjust the crop boxes by hand.
-- Page 1 is the front and page 2 is the back. Each card fills the full 6×4 page, edge to edge.
+- Page 1 is the front and page 2 is the back. Each page is 4 × 6 in (landscape) with the card printed at exactly 8.5 × 5.5 cm in the centre, with corner crop marks for cutting.
 - Color modes: Color, Grayscale, or Both (color pages followed by grayscale pages).
 - Print directly, or download a 300 DPI PDF or JPG files.
 - Everything runs in the browser. Files are never uploaded.
 
+## Paper and print sizes
+
+| | Inches | Centimetres | Millimetres |
+|---|---|---|---|
+| **Paper loaded in the printer (4 × 6)**, width | 4 in | 10.2 cm | 101.6 mm |
+| **Paper loaded in the printer (4 × 6)**, height | 6 in | 15.2 cm | 152.4 mm |
+| **Printed card**, width | 3.35 in | 8.5 cm | 85 mm |
+| **Printed card**, height | 2.17 in | 5.5 cm | 55 mm |
+
+The 4 × 6 paper is also sold as "4R", "10 × 15 cm" or "postcard / photo" size. Each printed card is 8.5 × 5.5 cm, centred on the 4 × 6 sheet. Cut along the corner crop marks. The card size can be changed in the tool's Card width / Card height fields.
+
 ## Usage
 
-Open `index.html` in Chrome or Edge. It needs no server or internet connection; the PDF libraries are bundled in `lib/`.
+Open `index.html` in Chrome or Edge. It needs no server or internet connection; the PDF libraries are bundled in `lib/`. Keep `app.js`, `lib/` and `assets/` in the same folder as `index.html`.
 
-In the printer dialog, choose paper size 4×6 in (10×15 cm), set scale to 100% / Actual size, and turn on borderless printing if your printer supports it.
+1. Click **Choose file** and select the DL or RC PDF or image.
+2. Check the red **FRONT** and green **BACK** boxes. Drag or resize them if needed.
+3. Choose the color mode (Color, Grayscale or Both).
+4. Click **Print**, or download the PDF.
+
+## Printer setup
+
+### Add the 4 × 6 paper size (one time only)
+
+If **4 × 6 in / 10 × 15 cm** isn't in your printer's paper size list, add it to Windows:
+
+1. Open **Start**, search for **Printers & scanners**, and open it.
+2. Under Related settings, click **Print server properties**.
+3. On the **Forms** tab, tick **Create a new form**.
+4. Enter:
+   - Form name: `4x6 Photo`
+   - Units: **Metric**
+   - Width: **10.16 cm**, Height: **15.24 cm**
+   - Printer area margins: **0**
+5. Click **Save Form**, then close the window and restart the browser.
+
+### Print dialog settings
+
+| Setting | Value |
+|---|---|
+| Paper size | **4x6 Photo** (10.16 × 15.24 cm) |
+| Orientation | **Landscape** |
+| Margins | **None** |
+| Scale | **100% / Actual size**; don't use "Fit to page" |
+| Color | Color, or Black & white |
+| Borderless | **Off**: borderless mode enlarges the print slightly |
+
+If the paper size doesn't appear in the browser's list, press **Ctrl+Shift+P** in the print window to open the Windows print dialog. Then open **Preferences** and set a **Custom / User defined** size of 101.6 × 152.4 mm.
+
+### Test print
+
+Print once on plain paper and measure the card with a ruler. It should be exactly **8.5 × 5.5 cm**. If it's bigger or smaller, scale is not set to 100%.
 
 ---
 
