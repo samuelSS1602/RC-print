@@ -152,6 +152,18 @@ function detectCards(canvas) {
       blobs.push({ x: (minX + R) / k, y: (minY + R) / k, w: (w - 2 * R) / k, h: (h - 2 * R) / k, area: w * h });
     }
   }
+  // Card-shaped page with no smaller card on it (e.g. Sarathi DL PDFs, one card per page):
+  // the page itself is the card, so use its content trimmed of any white margin.
+  const pageRatio = Math.max(W, H) / Math.min(W, H);
+  if (!blobs.length && pageRatio > 1.45 && pageRatio < 1.8) {
+    let minX = W, minY = H, maxX = -1, maxY = -1;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!ink[y * W + x]) continue;
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    return maxX < 0 ? [] : [{ x: minX / k, y: minY / k, w: (maxX - minX + 1) / k, h: (maxY - minY + 1) / k }];
+  }
   blobs.sort((a, b) => b.area - a.area);
   return blobs.slice(0, 2).sort((a, b) => (Math.abs(a.y - b.y) < a.h / 2 ? a.x - b.x : a.y - b.y));
 }
@@ -343,10 +355,12 @@ function updatePaperSpec() {
   $('cardSpec').textContent = txt;
 }
 
-// ---------- Print output: 4×6 in paper (landscape), one card per page ----------
-// The card itself prints at the Card width × height (8.5 × 5.5 cm by default), centred on the sheet.
-const PAPER_CM = { w: 15.24, h: 10.16 };   // 6 × 4 in, landscape
-const pageCm = () => PAPER_CM;
+// ---------- Print output: each page is exactly card size (landscape), one card per page ----------
+// Page size = Card width × height (8.5 × 5.5 cm by default); paper is chosen in the printer dialog.
+function pageCm() {
+  const { wcm, hcm } = cardPx();
+  return { w: wcm, h: hcm };
+}
 const fmtCm = v => (Math.round(v * 100) / 100).toString();
 const MODE_NOTES = {
   color: '2 pages: front, back (color)',
@@ -394,7 +408,7 @@ function clipRounded(card) {
   return out;
 }
 
-// Places the card at its exact size in the centre of the sheet and draws corner crop marks.
+// The page is exactly card size and the card covers it edge to edge.
 function composePage(card, dpi) {
   const pg = pageCm();
   const pw = Math.round(pg.w / 2.54 * dpi), ph = Math.round(pg.h / 2.54 * dpi);
@@ -402,25 +416,8 @@ function composePage(card, dpi) {
   page.width = pw; page.height = ph;
   const ctx = page.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pw, ph);
-
-  const { wcm, hcm } = cardPx();
-  const cw = Math.round(wcm / 2.54 * dpi), ch = Math.round(hcm / 2.54 * dpi);
-  const x = Math.round((pw - cw) / 2), y = Math.round((ph - ch) / 2);
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(card, x, y, cw, ch);
-
-  // Crop marks sit just outside each corner so nothing is drawn on the card itself.
-  const mm = dpi / 25.4, gap = 1.5 * mm, len = 5 * mm;
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = Math.max(1, 0.2 * mm);
-  ctx.beginPath();
-  for (const [cx, sx] of [[x, -1], [x + cw, 1]]) {
-    for (const [cy, sy] of [[y, -1], [y + ch, 1]]) {
-      ctx.moveTo(cx + sx * gap, cy); ctx.lineTo(cx + sx * (gap + len), cy);   // horizontal mark
-      ctx.moveTo(cx, cy + sy * gap); ctx.lineTo(cx, cy + sy * (gap + len));   // vertical mark
-    }
-  }
-  ctx.stroke();
+  ctx.drawImage(card, 0, 0, pw, ph);
   return page;
 }
 
@@ -475,15 +472,15 @@ $('dlPdf').onclick = () => {
     if (i) doc.addPage([pg.w, pg.h], 'landscape');
     doc.addImage(p.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pg.w, pg.h);
   });
-  doc.save(`${state.fileName}_4x6.pdf`);
-  setStatus(`PDF downloaded (${pages.length} pages, 4×6 in).`);
+  doc.save(`${state.fileName}_card.pdf`);
+  setStatus(`PDF downloaded (${pages.length} pages, ${fmtCm(pg.w)} × ${fmtCm(pg.h)} cm).`);
 };
 
 $('dlJpg').onclick = () => {
   const pages = buildPages();
   pages.forEach((p, i) => setTimeout(() => {
     const a = document.createElement('a');
-    a.download = `${state.fileName}_${p.file}_4x6.jpg`;
+    a.download = `${state.fileName}_${p.file}_card.jpg`;
     a.href = p.canvas.toDataURL('image/jpeg', 0.95);
     a.click();
   }, i * 300));
@@ -498,7 +495,7 @@ $('printBtn').onclick = () => {
   // Build the print document with DOM calls rather than an HTML string, so no markup
   // (and no user-supplied file name) is ever parsed as HTML.
   const doc = w.document, pg = pageCm();
-  doc.title = `${state.fileName} - 4x6 print`;
+  doc.title = `${state.fileName} - card print`;
   const style = doc.createElement('style');
   style.textContent = `
     @page { size: ${pg.w}cm ${pg.h}cm; margin: 0; }

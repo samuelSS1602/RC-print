@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DL / RC Card Print · Code Crafters</title>
-<meta name="description" content="Crop Driving Licence and RC cards and print them at 8.5 × 5.5 cm on 4×6 paper, in color or grayscale. Runs entirely in your browser.">
+<meta name="description" content="Crop Driving Licence and RC cards and print them at card size (8.5 × 5.5 cm), in color or grayscale. Runs entirely in your browser.">
 <meta name="author" content="Code Crafters">
 <meta name="theme-color" content="#030712">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -198,7 +198,7 @@
 <header class="topbar">
   <a class="brand" href="./" aria-label="DL / RC Card Print home">
     <img src="assets/favicon.svg" alt="">
-    <div><h1>DL / RC Card Print</h1><span>8.5 × 5.5 cm cards on 4×6 paper</span></div>
+    <div><h1>DL / RC Card Print</h1><span>Card-size print, 8.5 × 5.5 cm</span></div>
   </a>
   <ol class="steps" id="steps" aria-label="Progress">
     <li class="active" data-step="1"><b>1</b>Upload</li>
@@ -216,7 +216,7 @@
       <div class="hero">
         <span class="eyebrow">Driving Licence · RC</span>
         <h2>Print-ready PVC cards, <em>in seconds</em></h2>
-        <p>Upload the DL or RC you downloaded from Parivahan, Sarathi or DigiLocker. The front and back are detected automatically and printed at 8.5 × 5.5 cm on 4×6 paper.</p>
+        <p>Upload the DL or RC you downloaded from Parivahan, Sarathi or DigiLocker. The front and back are detected automatically and printed at card size, 8.5 × 5.5 cm.</p>
       </div>
       <label id="dropZone" class="drop">
         <span class="drop-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg></span>
@@ -286,10 +286,9 @@
     <div class="panel">
       <div class="panel-head"><h2>Print</h2></div>
       <dl class="spec">
-        <dt>Paper</dt><dd>4 × 6 in (10.16 × 15.24 cm), landscape</dd>
-        <dt>Card</dt><dd id="cardSpec">8.5 × 5.5 cm</dd>
+        <dt>Page</dt><dd><span id="cardSpec">8.5 × 5.5 cm</span>, landscape</dd>
         <dt>Pages</dt><dd>Page 1 front, page 2 back</dd>
-        <dt>Placement</dt><dd>Centered, corner crop marks</dd>
+        <dt>Placement</dt><dd>Card fills the page, edge to edge</dd>
       </dl>
       <span class="field-label">Color mode</span>
       <div class="segmented" id="colorMode" role="radiogroup" aria-label="Color mode">
@@ -314,7 +313,7 @@
       </div>
       <div class="tip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <span>Print settings: paper size <b>4×6 in / 10×15 cm</b> (create a custom 10.16 × 15.24 cm size if it isn't listed), orientation <b>Landscape</b>, margins <b>None</b>, scale <b>100% / Actual size</b>. Don't use "Fit to page".</span>
+        <span>Each page is exactly card size. In the print window, choose your <b>paper size</b>, set <b>Landscape</b>, margins <b>None</b> and scale <b>100% / Actual size</b>. Don't use "Fit to page", which enlarges the card.</span>
       </div>
       <div class="status" id="status" role="status" aria-live="polite"></div>
     </div>

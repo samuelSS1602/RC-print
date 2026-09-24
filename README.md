@@ -1,9 +1,9 @@
 # DL / RC PVC Card Print
 
-A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and prints them at 8.5 × 5.5 cm on 4 × 6 inch paper.
+A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and prints them at card size (8.5 × 5.5 cm).
 
-- Upload a PDF or image; the front and back cards are detected automatically, and you can adjust the crop boxes by hand.
-- Page 1 is the front and page 2 is the back. Each page is 4 × 6 in (landscape) with the card printed at exactly 8.5 × 5.5 cm in the centre, with corner crop marks for cutting.
+- Upload a PDF or image; the front and back cards are detected automatically, and you can adjust the crop boxes by hand. Works with PDFs that have both cards on one page (RC) and PDFs with one card per page (Sarathi DL).
+- Page 1 is the front and page 2 is the back. Each page is exactly card size, 8.5 × 5.5 cm, landscape, and the card fills it edge to edge. You choose the paper in the printer dialog.
 - Color modes: Color, Grayscale, or Both (color pages followed by grayscale pages).
 - Print directly, or download a 300 DPI PDF or JPG files.
 - Everything runs in the browser. Files are never uploaded.
@@ -17,7 +17,7 @@ A browser tool that crops the front and back of an Indian Driving Licence or RC 
 | **Printed card**, width | 3.35 in | 8.5 cm | 85 mm |
 | **Printed card**, height | 2.17 in | 5.5 cm | 55 mm |
 
-The 4 × 6 paper is also sold as "4R", "10 × 15 cm" or "postcard / photo" size. Each printed card is 8.5 × 5.5 cm, centred on the 4 × 6 sheet. Cut along the corner crop marks. The card size can be changed in the tool's Card width / Card height fields.
+The 4 × 6 paper is also sold as "4R", "10 × 15 cm" or "postcard / photo" size. The tool's pages are exactly card size (8.5 × 5.5 cm, landscape); the card size can be changed in the tool's Card width / Card height fields. Where the card lands on a larger sheet depends on the printer driver (usually centred or at the top-left corner), so do one test print first.
 
 ## Usage
 
