@@ -33,10 +33,20 @@ let pickSlot = 0;                       // card the file picker loads into
 function pickFile(slot) { pickSlot = slot; fileInput.click(); }
 $('newFileBtn').onclick = () => pickFile(state.cur);
 fileInput.onchange = e => {
-  const f = e.target.files[0];
+  const files = [...e.target.files];
   e.target.value = '';                  // allow re-selecting the same file
-  if (f) loadFile(f, pickSlot);
+  loadFiles(files, pickSlot);
 };
+// Two files at once become card 1 and card 2; a single file goes to the given card.
+async function loadFiles(files, slot) {
+  if (files.length > 1) { await loadFile(files[0], 0); await loadFile(files[1], 1); }
+  else if (files.length) await loadFile(files[0], slot);
+}
+// Where a dropped or pasted file goes: the first empty card, else the card being edited.
+function nextSlot() {
+  const empty = state.cards.findIndex(c => !c.pages.length);
+  return empty >= 0 ? empty : state.cur;
+}
 ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('over'); }));
 // Accept drops anywhere on the page so the browser never navigates away to open the PDF itself.
@@ -44,13 +54,12 @@ window.addEventListener('dragover', e => e.preventDefault());
 window.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('over');
-  const f = e.dataTransfer?.files?.[0];
-  if (f) loadFile(f, state.cur);
+  loadFiles([...(e.dataTransfer?.files || [])], nextSlot());
 });
 // Paste a screenshot or copied file with Ctrl+V.
 window.addEventListener('paste', e => {
   const item = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file');
-  if (item) loadFile(item.getAsFile(), state.cur);
+  if (item) loadFile(item.getAsFile(), nextSlot());
 });
 
 async function loadFile(file, slot = 0) {
