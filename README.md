@@ -4,6 +4,7 @@ A browser tool that crops the front and back of an Indian Driving Licence or RC 
 
 - Upload a PDF or image; the front and back cards are detected automatically, and you can adjust the crop boxes by hand. Works with PDFs that have both cards on one page (RC) and PDFs with one card per page (Sarathi DL).
 - Each page is a 4 × 6 in (10.16 × 15.24 cm) portrait sheet. Page 1 has two fronts and page 2 has two backs, stacked, centred and evenly spaced, so the sheet can be printed double-sided.
+- Two different cards on one sheet: load the first file as **Card 1** (top), then click **+ Add card 2** and load the second file (bottom). Page 1 has both fronts and page 2 both backs. With only one file, it prints once at the top and the bottom stays blank.
 - Color modes: Color, Grayscale, or Both (color pages followed by grayscale pages).
 - Print directly, or download a 300 DPI PDF or JPG files.
 - Everything runs in the browser. Files are never uploaded.

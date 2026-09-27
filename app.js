@@ -6,26 +6,36 @@ const RENDER_SCALE = 300 / 72;           // render PDF pages at 300 DPI
 const DPI = 300;
 const $ = id => document.getElementById(id);
 
-const state = {
+// One entry per card on the sheet: card 1 prints on top, card 2 below it.
+const newCard = () => ({
   pages: [],                                  // full-res canvases, one per page
-  active: 'front',
   boxes: {                                    // coordinates in full-res page pixels
     front: { page: 0, x: 0, y: 0, w: 0, h: 0, rot: 0, flip: false },
     back:  { page: 0, x: 0, y: 0, w: 0, h: 0, rot: 0, flip: false },
   },
+  fileName: '',
+});
+const state = {
+  cards: [newCard(), newCard()],
+  cur: 0,                                     // card shown in the editor
+  get pages() { return this.cards[this.cur].pages; },
+  get boxes() { return this.cards[this.cur].boxes; },
+  active: 'front',
   fx: { b: 100, c: 100, s: 100 },
   viewScale: 1,
-  fileName: 'card',
 };
+const baseName = () => state.cards[0].fileName || 'card';
 
 // ---------- File loading ----------
 const dropZone = $('dropZone'), fileInput = $('fileInput');
 // The drop zone is a <label> wrapping the input, so clicking it opens the file picker natively.
-$('newFileBtn').onclick = () => fileInput.click();
+let pickSlot = 0;                       // card the file picker loads into
+function pickFile(slot) { pickSlot = slot; fileInput.click(); }
+$('newFileBtn').onclick = () => pickFile(state.cur);
 fileInput.onchange = e => {
   const f = e.target.files[0];
   e.target.value = '';                  // allow re-selecting the same file
-  if (f) loadFile(f);
+  if (f) loadFile(f, pickSlot);
 };
 ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('over'); }));
@@ -35,28 +45,34 @@ window.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('over');
   const f = e.dataTransfer?.files?.[0];
-  if (f) loadFile(f);
+  if (f) loadFile(f, state.cur);
 });
 // Paste a screenshot or copied file with Ctrl+V.
 window.addEventListener('paste', e => {
   const item = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file');
-  if (item) loadFile(item.getAsFile());
+  if (item) loadFile(item.getAsFile(), state.cur);
 });
 
-async function loadFile(file) {
+async function loadFile(file, slot = 0) {
   setStatus('Loading…');
-  state.fileName = file.name.replace(/\.[^.]+$/, '') || 'card';
+  let pages;
   try {
-    state.pages = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+    pages = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
       ? await renderPdf(file) : [await loadImage(file)];
   } catch (err) {
     setStatus('Could not open file: ' + (err.message || err), true);
     return;
   }
-  const sel = $('pageSelect');
-  sel.innerHTML = state.pages.map((_, i) => `<option value="${i}">${i + 1}</option>`).join('');
+  // Card 2 can only be added once card 1 is there.
+  if (!state.cards[0].pages.length) slot = 0;
+  const card = state.cards[slot];
+  card.pages = pages;
+  card.fileName = file.name.replace(/\.[^.]+$/, '') || 'card';
   // A new file starts with no rotation or flip carried over from the previous one.
-  for (const b of Object.values(state.boxes)) { b.rot = 0; b.flip = false; }
+  for (const b of Object.values(card.boxes)) { b.rot = 0; b.flip = false; }
+  state.cur = slot;
+  fillPageSelect();
+  updateSlotUI();
   $('dropZoneWrap').classList.add('hidden');
   $('editor').classList.remove('hidden');
   $('app').classList.remove('empty');
@@ -66,8 +82,40 @@ async function loadFile(file) {
   });
   ['dlPdf', 'dlJpg', 'printBtn'].forEach(id => $(id).disabled = false);
   autoDetect();
-  setStatus(`${state.pages.length} page(s) loaded. ${$('status').textContent}`);
+  setStatus(`Card ${slot + 1}: ${pages.length} page(s) loaded. ${$('status').textContent}`);
 }
+
+function fillPageSelect() {
+  $('pageSelect').innerHTML = state.pages.map((_, i) => `<option value="${i}">${i + 1}</option>`).join('');
+}
+
+// ---------- Card 1 / card 2 selector ----------
+function updateSlotUI() {
+  document.querySelectorAll('#slotSel .seg').forEach(btn => {
+    const i = +btn.dataset.slot, card = state.cards[i];
+    btn.classList.toggle('active', i === state.cur);
+    btn.setAttribute('aria-selected', i === state.cur);
+    btn.textContent = card.pages.length ? `Card ${i + 1} · ${i ? 'bottom' : 'top'}` : `+ Add card ${i + 1}`;
+    btn.title = card.fileName || 'Choose a file for this card';
+  });
+  $('clearCard2').classList.toggle('hidden', !state.cards[1].pages.length);
+}
+document.querySelectorAll('#slotSel .seg').forEach(btn => btn.onclick = () => {
+  const i = +btn.dataset.slot;
+  if (!state.cards[i].pages.length) return pickFile(i);
+  state.cur = i;
+  fillPageSelect();
+  updateSlotUI();
+  showActivePage();
+});
+$('clearCard2').onclick = () => {
+  state.cards[1] = newCard();
+  state.cur = 0;
+  fillPageSelect();
+  updateSlotUI();
+  showActivePage();
+  setStatus('Card 2 removed; only card 1 prints.');
+};
 
 async function renderPdf(file) {
   if (!window.pdfjsLib) throw new Error('PDF library missing – keep the "lib" folder next to index.html');
@@ -287,8 +335,8 @@ function filterString() {
 }
 
 // Draws one card at the requested pixel size (landscape), applying crop, rotation, flip and filters.
-function renderCard(key, outW, outH) {
-  const b = state.boxes[key], src = state.pages[b.page];
+function renderCard(key, outW, outH, card = state.cards[state.cur]) {
+  const b = card.boxes[key], src = card.pages[b.page];
   const out = document.createElement('canvas');
   out.width = outW; out.height = outH;
   const ctx = out.getContext('2d');
@@ -369,8 +417,8 @@ function cardSlots() {
 }
 const fmtCm = v => (Math.round(v * 100) / 100).toString();
 const MODE_NOTES = {
-  color: '2 pages: 2 fronts, 2 backs (color)',
-  gray: '2 pages: 2 fronts, 2 backs (grayscale)',
+  color: '2 pages: fronts, then backs (color)',
+  gray: '2 pages: fronts, then backs (grayscale)',
   both: '4 pages: fronts, backs (color), then fronts, backs (grayscale)',
 };
 let colorMode = 'color';
@@ -414,8 +462,8 @@ function clipRounded(card) {
   return out;
 }
 
-// Draws the card twice on a 4 × 6 in portrait page.
-function composePage(card, dpi) {
+// Draws the cards (top, bottom) on a 4 × 6 in portrait page.
+function composePage(cards, dpi) {
   const pg = pageCm(), px = cm => Math.round(cm / 2.54 * dpi);
   const pw = px(pg.w), ph = px(pg.h);
   const page = document.createElement('canvas');
@@ -423,7 +471,7 @@ function composePage(card, dpi) {
   const ctx = page.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pw, ph);
   ctx.imageSmoothingQuality = 'high';
-  for (const s of cardSlots()) ctx.drawImage(card, px(s.x), px(s.y), px(s.w), px(s.h));
+  cardSlots().forEach((s, i) => cards[i] && ctx.drawImage(cards[i], px(s.x), px(s.y), px(s.w), px(s.h)));
   return page;
 }
 
@@ -432,12 +480,15 @@ function buildPages(dpi = DPI) {
   // Render the cards straight at their print resolution so they stay sharp.
   const { wcm, hcm } = cardPx();
   const w = Math.round(wcm / 2.54 * dpi), h = Math.round(hcm / 2.54 * dpi);
-  const cards = {
-    front: clipRounded(renderCard('front', w, h)),
-    back: clipRounded(renderCard('back', w, h)),
-  };
+  // Without a card 2, the bottom place on the sheet stays blank.
+  const loaded = state.cards.filter(c => c.pages.length);
+  const cards = {};
+  for (const side of ['front', 'back']) {
+    const imgs = loaded.map(c => clipRounded(renderCard(side, w, h, c)));
+    cards[side] = imgs;
+  }
   const set = gray => ['front', 'back'].map(side => ({
-    canvas: composePage(gray ? toGray(cards[side]) : cards[side], dpi),
+    canvas: composePage(gray ? cards[side].map(toGray) : cards[side], dpi),
     label: `${side === 'front' ? 'Front' : 'Back'}${gray ? ' · Gray' : colorMode === 'both' ? ' · Color' : ''}`,
     file: `${side}${gray ? '_gray' : colorMode === 'both' ? '_color' : ''}`,
   }));
@@ -448,7 +499,7 @@ function buildPages(dpi = DPI) {
 
 function renderSheetPreview() {
   const box = $('sheetPreview');
-  if (!state.pages.length) { box.innerHTML = ''; return; }
+  if (!state.cards[0].pages.length) { box.innerHTML = ''; return; }
   const pages = buildPages(60);
   box.innerHTML = '';
   pages.forEach((p, i) => {
@@ -478,7 +529,7 @@ $('dlPdf').onclick = () => {
     if (i) doc.addPage([pg.w, pg.h], 'portrait');
     doc.addImage(p.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pg.w, pg.h);
   });
-  doc.save(`${state.fileName}_4x6.pdf`);
+  doc.save(`${baseName()}_4x6.pdf`);
   setStatus(`PDF downloaded (${pages.length} pages, 4 × 6 in portrait, 2 cards per page).`);
 };
 
@@ -486,7 +537,7 @@ $('dlJpg').onclick = () => {
   const pages = buildPages();
   pages.forEach((p, i) => setTimeout(() => {
     const a = document.createElement('a');
-    a.download = `${state.fileName}_${p.file}_4x6.jpg`;
+    a.download = `${baseName()}_${p.file}_4x6.jpg`;
     a.href = p.canvas.toDataURL('image/jpeg', 0.95);
     a.click();
   }, i * 300));
@@ -501,7 +552,7 @@ $('printBtn').onclick = () => {
   // Build the print document with DOM calls rather than an HTML string, so no markup
   // (and no user-supplied file name) is ever parsed as HTML.
   const doc = w.document, pg = pageCm();
-  doc.title = `${state.fileName} - card print`;
+  doc.title = `${baseName()} - card print`;
   const style = doc.createElement('style');
   style.textContent = `
     @page { size: ${pg.w}cm ${pg.h}cm; margin: 0; }

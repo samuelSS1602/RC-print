@@ -235,7 +235,14 @@
 
     <div id="editor" class="hidden">
       <div class="toolbar">
-        <div class="segmented" role="tablist" aria-label="Card to edit">
+        <div class="segmented" id="slotSel" role="tablist" aria-label="Card on the sheet">
+          <button class="seg active" data-slot="0" role="tab">Card 1 · top</button>
+          <button class="seg" data-slot="1" role="tab">+ Add card 2</button>
+        </div>
+        <button id="clearCard2" class="hidden" title="Remove card 2 from the sheet">Remove card 2</button>
+      </div>
+      <div class="toolbar">
+        <div class="segmented" role="tablist" aria-label="Side to edit">
           <button class="seg active" data-target="front" id="selFront" role="tab">Front</button>
           <button class="seg" data-target="back" id="selBack" role="tab">Back</button>
         </div>
@@ -248,7 +255,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 18v-6M9 15l3-3 3 3"/></svg>Change file</button>
       </div>
       <div class="stage-wrap"><div class="stage" id="stage"><canvas id="pageCanvas"></canvas></div></div>
-      <p class="note">Drag a box to move it and drag a corner to resize it. Each box can use a different page.</p>
+      <p class="note">Drag a box to move it and drag a corner to resize it. Each box can use a different page. Card 1 prints at the top of the sheet and card 2 below it; without a card 2, the bottom place stays blank.</p>
     </div>
   </section>
 
@@ -288,7 +295,8 @@
       <dl class="spec">
         <dt>Paper</dt><dd>4 × 6 in (10.16 × 15.24 cm), portrait</dd>
         <dt>Card</dt><dd><span id="cardSpec">8.5 × 5.5 cm</span></dd>
-        <dt>Pages</dt><dd>Page 1: 2 fronts, page 2: 2 backs</dd>
+        <dt>Pages</dt><dd>Page 1: fronts, page 2: backs</dd>
+        <dt>Layout</dt><dd>Card 1 top, card 2 bottom</dd>
       </dl>
       <span class="field-label">Color mode</span>
       <div class="segmented" id="colorMode" role="radiogroup" aria-label="Color mode">
@@ -296,7 +304,7 @@
         <button class="seg" data-mode="gray" role="radio" aria-checked="false">Grayscale</button>
         <button class="seg" data-mode="both" role="radio" aria-checked="false">Both</button>
       </div>
-      <p class="note" id="modeNote">2 pages: 2 fronts, 2 backs (color)</p>
+      <p class="note" id="modeNote">2 pages: fronts, then backs (color)</p>
       <div class="row">Card width (cm) <input type="number" id="cardW" step="0.01" value="8.50" aria-label="Card width in cm"></div>
       <div class="row">Card height (cm) <input type="number" id="cardH" step="0.01" value="5.50" aria-label="Card height in cm"></div>
       <label class="row check"><span>Rounded corners</span><input type="checkbox" id="rounded"></label>
