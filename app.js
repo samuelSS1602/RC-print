@@ -355,17 +355,23 @@ function updatePaperSpec() {
   $('cardSpec').textContent = txt;
 }
 
-// ---------- Print output: each page is exactly card size (landscape), one card per page ----------
-// Page size = Card width × height (8.5 × 5.5 cm by default); paper is chosen in the printer dialog.
+// ---------- Print output: 4 × 6 in portrait sheet, two copies of one side per page ----------
+// Page 1 holds two fronts, page 2 two backs, stacked and evenly spaced so the sheet can be printed duplex.
+const SHEET = { w: 10.16, h: 15.24 };    // 4 × 6 in, portrait
 function pageCm() {
+  return { ...SHEET };
+}
+// Card positions (cm) on the sheet: centred horizontally, equal space above, between and below.
+function cardSlots() {
   const { wcm, hcm } = cardPx();
-  return { w: wcm, h: hcm };
+  const x = (SHEET.w - wcm) / 2, gap = (SHEET.h - 2 * hcm) / 3;
+  return [{ x, y: gap }, { x, y: 2 * gap + hcm }].map(p => ({ ...p, w: wcm, h: hcm }));
 }
 const fmtCm = v => (Math.round(v * 100) / 100).toString();
 const MODE_NOTES = {
-  color: '2 pages: front, back (color)',
-  gray: '2 pages: front, back (grayscale)',
-  both: '4 pages: front, back (color), then front, back (grayscale)',
+  color: '2 pages: 2 fronts, 2 backs (color)',
+  gray: '2 pages: 2 fronts, 2 backs (grayscale)',
+  both: '4 pages: fronts, backs (color), then fronts, backs (grayscale)',
 };
 let colorMode = 'color';
 
@@ -408,16 +414,16 @@ function clipRounded(card) {
   return out;
 }
 
-// The page is exactly card size and the card covers it edge to edge.
+// Draws the card twice on a 4 × 6 in portrait page.
 function composePage(card, dpi) {
-  const pg = pageCm();
-  const pw = Math.round(pg.w / 2.54 * dpi), ph = Math.round(pg.h / 2.54 * dpi);
+  const pg = pageCm(), px = cm => Math.round(cm / 2.54 * dpi);
+  const pw = px(pg.w), ph = px(pg.h);
   const page = document.createElement('canvas');
   page.width = pw; page.height = ph;
   const ctx = page.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pw, ph);
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(card, 0, 0, pw, ph);
+  for (const s of cardSlots()) ctx.drawImage(card, px(s.x), px(s.y), px(s.w), px(s.h));
   return page;
 }
 
@@ -467,20 +473,20 @@ $('dlPdf').onclick = () => {
   setStatus('Building PDF…');
   const pages = buildPages();
   const pg = pageCm();
-  const doc = new window.jspdf.jsPDF({ unit: 'cm', format: [pg.w, pg.h], orientation: 'landscape' });
+  const doc = new window.jspdf.jsPDF({ unit: 'cm', format: [pg.w, pg.h], orientation: 'portrait' });
   pages.forEach((p, i) => {
-    if (i) doc.addPage([pg.w, pg.h], 'landscape');
+    if (i) doc.addPage([pg.w, pg.h], 'portrait');
     doc.addImage(p.canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pg.w, pg.h);
   });
-  doc.save(`${state.fileName}_card.pdf`);
-  setStatus(`PDF downloaded (${pages.length} pages, ${fmtCm(pg.w)} × ${fmtCm(pg.h)} cm).`);
+  doc.save(`${state.fileName}_4x6.pdf`);
+  setStatus(`PDF downloaded (${pages.length} pages, 4 × 6 in portrait, 2 cards per page).`);
 };
 
 $('dlJpg').onclick = () => {
   const pages = buildPages();
   pages.forEach((p, i) => setTimeout(() => {
     const a = document.createElement('a');
-    a.download = `${state.fileName}_${p.file}_card.jpg`;
+    a.download = `${state.fileName}_${p.file}_4x6.jpg`;
     a.href = p.canvas.toDataURL('image/jpeg', 0.95);
     a.click();
   }, i * 300));

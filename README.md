@@ -1,9 +1,9 @@
 # DL / RC PVC Card Print
 
-A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and prints them at card size (8.5 × 5.5 cm).
+A browser tool that crops the front and back of an Indian Driving Licence or RC (from Parivahan, Sarathi or DigiLocker) and prints them on 4 × 6 in paper, two cards per sheet, at card size (8.5 × 5.5 cm).
 
 - Upload a PDF or image; the front and back cards are detected automatically, and you can adjust the crop boxes by hand. Works with PDFs that have both cards on one page (RC) and PDFs with one card per page (Sarathi DL).
-- Page 1 is the front and page 2 is the back. Each page is exactly card size, 8.5 × 5.5 cm, landscape, and the card fills it edge to edge. You choose the paper in the printer dialog.
+- Each page is a 4 × 6 in (10.16 × 15.24 cm) portrait sheet. Page 1 has two fronts and page 2 has two backs, stacked, centred and evenly spaced, so the sheet can be printed double-sided.
 - Color modes: Color, Grayscale, or Both (color pages followed by grayscale pages).
 - Print directly, or download a 300 DPI PDF or JPG files.
 - Everything runs in the browser. Files are never uploaded.
@@ -17,7 +17,7 @@ A browser tool that crops the front and back of an Indian Driving Licence or RC 
 | **Printed card**, width | 3.35 in | 8.5 cm | 85 mm |
 | **Printed card**, height | 2.17 in | 5.5 cm | 55 mm |
 
-The 4 × 6 paper is also sold as "4R", "10 × 15 cm" or "postcard / photo" size. The tool's pages are exactly card size (8.5 × 5.5 cm, landscape); the card size can be changed in the tool's Card width / Card height fields. Where the card lands on a larger sheet depends on the printer driver (usually centred or at the top-left corner), so do one test print first.
+The 4 × 6 paper is also sold as "4R", "10 × 15 cm" or "postcard / photo" size. The tool's pages are 4 × 6 in, portrait, with two cards on each. The card size can be changed in the tool's Card width / Card height fields; the cards stay centred with equal space above, between and below them (about 1.41 cm at 8.5 × 5.5 cm).
 
 ## Usage
 
@@ -49,7 +49,7 @@ If **4 × 6 in / 10 × 15 cm** isn't in your printer's paper size list, add it t
 | Setting | Value |
 |---|---|
 | Paper size | **4x6 Photo** (10.16 × 15.24 cm) |
-| Orientation | **Landscape** |
+| Orientation | **Portrait** |
 | Margins | **None** |
 | Scale | **100% / Actual size**; don't use "Fit to page" |
 | Color | Color, or Black & white |
